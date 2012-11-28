@@ -1,0 +1,101 @@
+#SConscript('build.scons', variant_dir='build', duplicate=0)
+
+import os
+import shutil;
+from subprocess import call
+
+
+#Post actions
+#--------------------------------
+
+#Run the unit tests
+def runUnitTest(env,target,source):
+    print 'Running Unit tests'
+    call(["./build/unitTest"])
+
+#After building gtest library
+def post_libgtest(target, source, env):
+    shutil.move('libgtest.a', 'build/libgtest.a')
+    print 'Done test library'
+
+#After building the game
+def post_tictactoe(target, source, env):
+    shutil.move('tictactoe', 'build/tictactoe')
+    print 'Done building game'
+
+#After running all tests
+def post_unitTest(target, source, env):
+    shutil.move('unitTest', 'build/unitTest')
+    print "Done building tests"
+
+#initialize the environment
+env = Environment()
+
+#Paths
+#---------------------------------------
+sourcePath = '../src/'
+
+headers = ['gtest/include/', 
+            'gtest/',
+            'gtest/internal/', 
+            'gtest/src/'
+            ]
+
+libgtest_sources = ['gtest/src/gtest.cc',
+                    'gtest/src/gtest_main.cc',
+                    'gtest/src/gtest-death-test.cc',
+                    'gtest/src/gtest-filepath.cc',
+                    'gtest/src/gtest-port.cc',
+                    'gtest/src/gtest-printers.cc',
+                    'gtest/src/gtest-test-part.cc',
+                    'gtest/src/gtest-typed-test.cc'
+                    ]
+
+tictactoe_sources = Glob('src/*.cpp')
+
+test_sources = Glob('test/*.cpp') + [
+                'src/counter.o',
+                'src/Player.o',
+                'src/Game.o',
+                'src/Board.o',
+		'src/TicTacToe.o'
+                ]
+
+
+#Tell scons were stuff is
+env.Append(CPPPATH = headers)
+env.Append(LIBPATH = ['build/'])
+env.Append(CXXFLAGS = ['-g', '-Wall', '-Wextra'])
+env.Append(LINKFLAGS = ['-pthread'])
+
+#Build targets
+#---------------------------------------
+
+#Google test framwork
+libgtest = env.Library(target='libgtest', source = libgtest_sources)
+
+#TicTacToe game
+tictactoe = env.Program(target='tictactoe', source = tictactoe_sources)
+
+#Build test
+unitTest = env.Program(target='unitTest', source = test_sources,  LIBS=['libgtest'])
+
+#Run test
+runTest = env.Command("test.passed",unitTest ,runUnitTest)
+
+#Build and run tests
+test_alias = Alias('test', [unitTest, runTest])
+runTest_alias = Alias('run-test', [runTest])
+
+#Set dependancy order
+env.Depends(unitTest, libgtest)
+env.Depends(unitTest, tictactoe)
+env.Depends(runTest, unitTest)
+
+
+#Add post actions
+env.AddPostAction(libgtest, post_libgtest)
+env.AddPostAction(tictactoe, post_tictactoe)
+env.AddPostAction(unitTest, post_unitTest)
+
+
