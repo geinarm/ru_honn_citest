@@ -8,7 +8,7 @@
 
 TEST( Player, checkScore ) {
     Player player;
-    EXPECT_EQ(player.getScore(), 0 );
+    EXPECT_EQ(player.getScore(), 12 );
     player.addScore();
     EXPECT_EQ(player.getScore(), 1 );
 }
